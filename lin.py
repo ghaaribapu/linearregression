@@ -17,8 +17,8 @@ if uploaded_file:
 
     # Step 3: Allow the user to select x and y axes from the dataset
     columns = data.columns.tolist()
-    x_axis = st.selectbox('Select the X-axis:', columns)
-    y_axis = st.selectbox('Select the Y-axis:', columns)
+    x_axis = st.selectbox('Select the X-axis (Independent Variable):', columns)
+    y_axis = st.selectbox('Select the Y-axis (Dependent Variable):', columns)
 
     # Prepare the data for Linear Regression
     X = data[[x_axis]].values
@@ -46,7 +46,7 @@ if uploaded_file:
 
     # Interactive physics analogy: ball on a curve
     st.markdown("### Physics Analogy: The Ball in a Canyon")
-    st.image("https://example.com/path_to_ball_in_canyon_image.jpg", caption="A ball in a curved canyon")
+    st.image("ball.png", caption="A ball in a curved canyon")
 
     st.markdown("""
     Imagine a canyon shaped like a bowl. The lowest point of this bowl represents the equilibrium position, where potential energy is at its minimum. If you place a ball anywhere on the curve of the canyon, it will roll down to this lowest point due to gravity.
