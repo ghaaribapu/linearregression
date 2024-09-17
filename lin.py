@@ -46,16 +46,22 @@ if uploaded_file:
 
     # Interactive physics analogy: ball on a curve
     st.markdown("### Physics Analogy: The Ball in a Canyon")
-    st.image("ball.png", caption="A ball in a curved canyon")
+    st.image("https://example.com/path_to_ball_in_canyon_image.jpg", caption="A ball in a curved canyon")
 
     st.markdown("""
-    Imagine a canyon shaped like a bowl. The lowest point of this bowl represents the equilibrium position, where the potential energy is at its minimum. If you place a ball anywhere on the curve of the canyon, it will roll down to this lowest point due to gravity. 
+    Imagine a canyon shaped like a bowl. The lowest point of this bowl represents the equilibrium position, where the potential energy is at its minimum. If you place a ball anywhere on the curve of the canyon, it will roll down to this lowest point due to gravity.
 
-    In linear regression, the goal is to find the best fit line that minimizes the distance between the actual data points and the line itself. This distance is similar to how far the ball is from the lowest point in the canyon. 
+    In linear regression, the goal is to find the best fit line that minimizes the distance between the actual data points and the line itself. This distance is similar to how far the ball is from the lowest point in the canyon.
 
-    The slope (m) of the line determines how steep the ramp into the canyon is, while the intercept (c) represents the height at which the ramp starts. By adjusting the slope and intercept, we can move the line to better fit the data, just like how you might tilt the ramp to help the ball reach the bottom more easily. 
+    - **Slope (m):** The slope of the line determines how steep the ramp into the canyon is. A steeper slope means a quicker change in y values for small changes in x.
+    
+    - **Intercept (c):** The intercept represents the height at which the ramp starts. Changing the intercept moves the entire line up or down.
 
-    When the line of best fit is correctly positioned, it minimizes the errors—much like how the ball finds its natural resting place at the bottom of the canyon.
+    The process of adjusting the slope and intercept to minimize error can be likened to tilting the ramp or adjusting its starting height to help the ball roll to the bottom more easily. 
+
+    When the line of best fit is correctly positioned, it minimizes the errors—just like how the ball finds its natural resting place at the bottom of the canyon.
+
+    The line of best fit has the equation: **y = {m_best:.2f}x + {c_best:.2f}**, representing the relationship between the variables in your dataset.
     """)
 
     # 3D visualization of the parameter space
@@ -70,13 +76,14 @@ if uploaded_file:
     fig_3d = go.Figure(data=[go.Surface(z=SSE, x=M, y=C, colorscale='Viridis')])
     
     # Position of the ball on the curve
-    ball_position = m_best, c_best
+    ball_position_x = m_best
+    ball_position_y = c_best
     ball_sse = mean_squared_error(y, model.predict(X)) * len(y)  # SSE at the best fit
     
     # Add the ball's position as a point
     fig_3d.add_trace(go.Scatter3d(
-        x=[ball_position[0]],
-        y=[ball_position[1]],
+        x=[ball_position_x],
+        y=[ball_position_y],
         z=[ball_sse],
         mode='markers',
         marker=dict(size=10, color='red'),
@@ -92,13 +99,15 @@ if uploaded_file:
     
     st.plotly_chart(fig_3d)
 
-    # Additional interactive feature to move the ball
+    # Sliders for controlling ball position on all axes
     st.markdown("### Move the Ball to Adjust the Fit")
-    ball_position = st.slider('Adjust Ball Position (on the X-axis)', min_value=float(X.min()), max_value=float(X.max()), value=float(X.mean()), step=0.1)
-    
+    ball_position_x = st.slider('Adjust Slope (m)', min_value=float(m_range.min()), max_value=float(m_range.max()), value=float(m_best), step=0.01)
+    ball_position_y = st.slider('Adjust Intercept (c)', min_value=float(c_range.min()), max_value=float(c_range.max()), value=float(c_best), step=0.01)
+    ball_position_z = st.slider('Adjust SSE', min_value=0.0, max_value=float(SSE.max()), value=float(ball_sse), step=0.1)
+
     # Calculate new line based on ball position
-    new_m = (ball_position - c_best) / (X.max() - X.min())
-    new_c = c_best
+    new_m = ball_position_x
+    new_c = ball_position_y
     new_y_fit = new_m * X + new_c
 
     fig_adjusted = go.Figure()
