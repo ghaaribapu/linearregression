@@ -1,14 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-from matplotlib import cm
 
 # Set up streamlit app
-st.title("Linear Regression Visualizer")
+st.title("Interactive Linear Regression Visualizer")
 
 # Step 1: Upload a CSV file
 uploaded_file = st.file_uploader("Upload your CSV file", type="csv")
@@ -19,8 +17,8 @@ if uploaded_file:
 
     # Step 3: Allow the user to select x and y axes from the dataset
     columns = data.columns.tolist()
-    x_axis = st.selectbox('Select the X-axis (Independent Variable):', columns)
-    y_axis = st.selectbox('Select the Y-axis (Dependent Variable):', columns)
+    x_axis = st.selectbox('Select the X-axis:', columns)
+    y_axis = st.selectbox('Select the Y-axis:', columns)
 
     # Prepare the data for Linear Regression
     X = data[[x_axis]].values
@@ -32,87 +30,64 @@ if uploaded_file:
     m_best = model.coef_[0]
     c_best = model.intercept_
 
-    # Step 5: Create a meshgrid for the parameter space (m and c)
+    # Create the best fit line
+    y_fit = model.predict(X)
+
+    # Plot using Plotly
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=X.flatten(), y=y, mode='markers', name='Data Points', marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=X.flatten(), y=y_fit, mode='lines', name='Best Fit Line', line=dict(color='red')))
+    
+    fig.update_layout(title='Linear Regression',
+                      xaxis_title=x_axis,
+                      yaxis_title=y_axis)
+
+    st.plotly_chart(fig)
+
+    # Interactive physics analogy: ball on a curve
+    st.markdown("### Physics Analogy: The Ball in a Canyon")
+    st.image("https://example.com/path_to_ball_in_canyon_image.jpg", caption="A ball in a curved canyon")
+
+    st.markdown("""
+    Imagine a canyon shaped like a bowl. The bottom of the bowl represents the equilibrium position, where potential energy is at its lowest. If you place a ball anywhere on the curve of the canyon, it will roll down to the bottom due to gravity, finding the lowest point.
+
+    In linear regression, the line of best fit represents this lowest point of error. The slope (m) and intercept (c) determine the angle and position of this line. The distance the ball rolls to reach the bottom represents the errors in prediction. 
+
+    By adjusting the slope and intercept, we can change the line of best fit to minimize these errors, just like how a ball will naturally find the lowest point in a canyon.
+    """)
+
+    # 3D visualization of the parameter space
     m_range = np.linspace(m_best - 5, m_best + 5, 100)
     c_range = np.linspace(c_best - 5, c_best + 5, 100)
     M, C = np.meshgrid(m_range, c_range)
 
-    # Step 6: Compute the sum of squared errors (SSE) for each combination of m and c
-    def compute_sse(m, c):
-        y_pred = m * X + c
-        sse = mean_squared_error(y, y_pred) * len(y)
-        return sse
+    # Calculate SSE for the surface
+    SSE = np.array([[mean_squared_error(y, m * X + c) * len(y) for m in m_range] for c in c_range])
 
-    SSE = np.array([[compute_sse(m, c) for m in m_range] for c in c_range])
+    fig_3d = go.Figure(data=[go.Surface(z=SSE, x=M, y=C, colorscale='Viridis')])
+    fig_3d.update_layout(title='Surface Plot of SSE',
+                         scene=dict(
+                             xaxis_title='Slope (m)',
+                             yaxis_title='Intercept (c)',
+                             zaxis_title='SSE'),
+                         autosize=True)
+    st.plotly_chart(fig_3d)
 
-    # Step 7: Plot the 3D heatmap of the parameter space (m, c, SSE)
-    fig = plt.figure(figsize=(10, 5))
+    # Additional interactive feature to move the ball
+    st.markdown("### Move the Ball to Adjust the Fit")
+    ball_position = st.slider('Adjust Ball Position (on the X-axis)', min_value=float(X.min()), max_value=float(X.max()), value=float(X.mean()), step=0.1)
+    
+    # Calculate new line based on ball position
+    new_m = (ball_position - c_best) / (X.max() - X.min())
+    new_c = c_best
+    new_y_fit = new_m * X + new_c
 
-    ax1 = fig.add_subplot(121)
-    ax1.scatter(X, y, label='Data Points')
-    ax1.plot(X, model.predict(X), color='red', label=f'Best Fit Line: y={m_best:.2f}x + {c_best:.2f}')
-    ax1.set_xlabel(x_axis)
-    ax1.set_ylabel(y_axis)
-    ax1.legend()
-    ax1.title.set_text('Linear Regression')
+    fig_adjusted = go.Figure()
+    fig_adjusted.add_trace(go.Scatter(x=X.flatten(), y=y, mode='markers', name='Data Points', marker=dict(color='blue')))
+    fig_adjusted.add_trace(go.Scatter(x=X.flatten(), y=new_y_fit, mode='lines', name='Adjusted Fit', line=dict(color='green')))
+    
+    fig_adjusted.update_layout(title='Adjusted Fit Based on Ball Position',
+                                xaxis_title=x_axis,
+                                yaxis_title=y_axis)
 
-    ax2 = fig.add_subplot(122, projection='3d')
-    ax2.plot_surface(M, C, SSE, cmap=cm.coolwarm, edgecolor='none')
-    ax2.set_xlabel('m (slope)')
-    ax2.set_ylabel('c (intercept)')
-    ax2.set_zlabel('SSE')
-    ax2.title.set_text('Parameter Space')
-
-    # Step 8: Interactive slider to adjust m and c and see its effect
-    m_slider = st.slider('Adjust slope (m)', min_value=float(m_range.min()), max_value=float(m_range.max()), value=float(m_best), step=0.01)
-    c_slider = st.slider('Adjust intercept (c)', min_value=float(c_range.min()), max_value=float(c_range.max()), value=float(c_best), step=0.01)
-
-    # Step 9: Plot the adjusted regression line
-    y_pred_adjusted = m_slider * X + c_slider
-    ax1.plot(X, y_pred_adjusted, color='green', linestyle='--', label=f'Adjusted Line: y={m_slider:.2f}x + {c_slider:.2f}')
-    ax1.legend()
-
-    # Display the updated plot
-    st.pyplot(fig)
-
-    # Step 10: Residuals Plot
-    residuals = y - model.predict(X)
-    fig_residuals = plt.figure(figsize=(8, 4))
-    plt.scatter(X, residuals, color='blue', label='Residuals')
-    plt.axhline(0, color='red', linestyle='--')
-    plt.xlabel(x_axis)
-    plt.ylabel('Residuals')
-    plt.title('Residuals Plot')
-    plt.legend()
-    st.pyplot(fig_residuals)
-
-    # Step 11: Contour Plot of SSE
-    fig_contour = plt.figure(figsize=(8, 5))
-    plt.contourf(M, C, SSE, levels=50, cmap='coolwarm')
-    plt.colorbar(label='SSE')
-    plt.xlabel('m (slope)')
-    plt.ylabel('c (intercept)')
-    plt.title('Contour Plot of SSE')
-    st.pyplot(fig_contour)
-
-    # Step 12: 3D Visualization of Data and Fit
-    fig_3d = plt.figure(figsize=(10, 7))
-    ax3 = fig_3d.add_subplot(111, projection='3d')
-    ax3.scatter(X, y, zs=0, zdir='y', label='Data Points', alpha=0.5)
-    y_surface = m_best * X + c_best  # Use the best fit for the surface
-    ax3.plot(X, y_surface, zs=0, zdir='y', color='red', alpha=0.5, label='Best Fit Line')
-    ax3.set_xlabel(x_axis)
-    ax3.set_ylabel(y_axis)
-    ax3.set_zlabel('Predicted Values')
-    ax3.title.set_text('3D Linear Regression Fit')
-    st.pyplot(fig_3d)
-
-    # Additional Physics Explanation
-    st.markdown("""
-    ### Physics Explanation
-    Imagine a canyon where the bottom is shaped like a cone. The lowest point in this cone represents the equilibrium position, where the potential energy is minimal. If you were to place a ball at any point on the surface of the canyon, it would naturally roll down to the lowest point due to gravity.
-
-    In the context of linear regression, the slope (m) and intercept (c) of the regression line can be thought of as the angle and height of the ramp leading into this canyon. The errors in prediction (the differences between the actual data points and the predicted line) are akin to the distance the ball would have to roll to reach the bottom of the cone.
-
-    Just as the ball finds its equilibrium position in the canyon, the line of best fit in linear regression minimizes these errors, effectively finding the optimal parameters (m and c) that yield the best possible fit for the data. The process of adjusting m and c to minimize error can be seen as trying to reach the lowest point in this gravitational landscape, where the balance of forces results in the most accurate representation of the data.
-    """)
+    st.plotly_chart(fig_adjusted)
