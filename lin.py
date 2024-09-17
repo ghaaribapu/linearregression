@@ -17,8 +17,8 @@ if uploaded_file:
 
     # Step 3: Allow the user to select x and y axes from the dataset
     columns = data.columns.tolist()
-    x_axis = st.selectbox('Select the X-axis:', columns)
-    y_axis = st.selectbox('Select the Y-axis:', columns)
+    x_axis = st.selectbox('Select the X-axis (Independent Variable):', columns)
+    y_axis = st.selectbox('Select the Y-axis (Dependent Variable):', columns)
 
     # Prepare the data for Linear Regression
     X = data[[x_axis]].values
@@ -46,14 +46,16 @@ if uploaded_file:
 
     # Interactive physics analogy: ball on a curve
     st.markdown("### Physics Analogy: The Ball in a Canyon")
-    st.image("https://example.com/path_to_ball_in_canyon_image.jpg", caption="A ball in a curved canyon")
+    st.image("ball.png", caption="A ball in a curved canyon")
 
     st.markdown("""
-    Imagine a canyon shaped like a bowl. The bottom of the bowl represents the equilibrium position, where potential energy is at its lowest. If you place a ball anywhere on the curve of the canyon, it will roll down to the bottom due to gravity, finding the lowest point.
+    Imagine a canyon shaped like a bowl. The lowest point of this bowl represents the equilibrium position, where the potential energy is at its minimum. If you place a ball anywhere on the curve of the canyon, it will roll down to this lowest point due to gravity. 
 
-    In linear regression, the line of best fit represents this lowest point of error. The slope (m) and intercept (c) determine the angle and position of this line. The distance the ball rolls to reach the bottom represents the errors in prediction. 
+    In linear regression, the goal is to find the best fit line that minimizes the distance between the actual data points and the line itself. This distance is similar to how far the ball is from the lowest point in the canyon. 
 
-    By adjusting the slope and intercept, we can change the line of best fit to minimize these errors, just like how a ball will naturally find the lowest point in a canyon.
+    The slope (m) of the line determines how steep the ramp into the canyon is, while the intercept (c) represents the height at which the ramp starts. By adjusting the slope and intercept, we can move the line to better fit the data, just like how you might tilt the ramp to help the ball reach the bottom more easily. 
+
+    When the line of best fit is correctly positioned, it minimizes the errors—much like how the ball finds its natural resting place at the bottom of the canyon.
     """)
 
     # 3D visualization of the parameter space
@@ -64,13 +66,30 @@ if uploaded_file:
     # Calculate SSE for the surface
     SSE = np.array([[mean_squared_error(y, m * X + c) * len(y) for m in m_range] for c in c_range])
 
+    # 3D Surface Plot with Ball Position
     fig_3d = go.Figure(data=[go.Surface(z=SSE, x=M, y=C, colorscale='Viridis')])
-    fig_3d.update_layout(title='Surface Plot of SSE',
+    
+    # Position of the ball on the curve
+    ball_position = m_best, c_best
+    ball_sse = mean_squared_error(y, model.predict(X)) * len(y)  # SSE at the best fit
+    
+    # Add the ball's position as a point
+    fig_3d.add_trace(go.Scatter3d(
+        x=[ball_position[0]],
+        y=[ball_position[1]],
+        z=[ball_sse],
+        mode='markers',
+        marker=dict(size=10, color='red'),
+        name='Ball Position (Best Fit)'
+    ))
+
+    fig_3d.update_layout(title='Surface Plot of SSE with Ball Position',
                          scene=dict(
                              xaxis_title='Slope (m)',
                              yaxis_title='Intercept (c)',
                              zaxis_title='SSE'),
                          autosize=True)
+    
     st.plotly_chart(fig_3d)
 
     # Additional interactive feature to move the ball
@@ -91,3 +110,6 @@ if uploaded_file:
                                 yaxis_title=y_axis)
 
     st.plotly_chart(fig_adjusted)
+
+    # Display the line of best fit values
+    st.markdown(f"### Line of Best Fit: y = {m_best:.2f}x + {c_best:.2f}")
