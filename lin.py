@@ -20,7 +20,7 @@ if uploaded_file:
     # Step 3: Allow the user to select x and y axes from the dataset
     columns = data.columns.tolist()
     x_axis = st.selectbox('Select the X-axis (Independent Variable):', columns)
-    y_axis = st.selectbox('Select the Y-axis (Dependent/Target Variable):', columns)
+    y_axis = st.selectbox('Select the Y-axis (Dependent Variable):', columns)
 
     # Prepare the data for Linear Regression
     X = data[[x_axis]].values
@@ -99,7 +99,8 @@ if uploaded_file:
     fig_3d = plt.figure(figsize=(10, 7))
     ax3 = fig_3d.add_subplot(111, projection='3d')
     ax3.scatter(X, y, zs=0, zdir='y', label='Data Points', alpha=0.5)
-    ax3.plot_surface(X, model.predict(X), zs=0, zdir='y', color='red', alpha=0.5, label='Best Fit Plane')
+    y_surface = m_best * X + c_best  # Use the best fit for the surface
+    ax3.plot(X, y_surface, zs=0, zdir='y', color='red', alpha=0.5, label='Best Fit Line')
     ax3.set_xlabel(x_axis)
     ax3.set_ylabel(y_axis)
     ax3.set_zlabel('Predicted Values')
@@ -109,8 +110,9 @@ if uploaded_file:
     # Additional Physics Explanation
     st.markdown("""
     ### Physics Explanation
-    - The slope (m) can be thought of as the angle of a ramp, affecting how steeply the dependent variable changes with respect to the independent variable.
-    - The intercept (c) represents the starting height of the ramp. Adjusting these parameters allows us to see how different angles and heights affect the data points.
-    - The residuals plot shows how well our model fits the data; ideally, residuals should be randomly distributed around zero.
-    - The contour plot illustrates the SSE landscape, where lower regions indicate better fitting parameters, akin to a ball rolling to the lowest point in a gravitational field.
+    Imagine a canyon where the bottom is shaped like a cone. The lowest point in this cone represents the equilibrium position, where the potential energy is minimal. If you were to place a ball at any point on the surface of the canyon, it would naturally roll down to the lowest point due to gravity.
+
+    In the context of linear regression, the slope (m) and intercept (c) of the regression line can be thought of as the angle and height of the ramp leading into this canyon. The errors in prediction (the differences between the actual data points and the predicted line) are akin to the distance the ball would have to roll to reach the bottom of the cone.
+
+    Just as the ball finds its equilibrium position in the canyon, the line of best fit in linear regression minimizes these errors, effectively finding the optimal parameters (m and c) that yield the best possible fit for the data. The process of adjusting m and c to minimize error can be seen as trying to reach the lowest point in this gravitational landscape, where the balance of forces results in the most accurate representation of the data.
     """)
